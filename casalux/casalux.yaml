@@ -1,0 +1,87 @@
+# To flash the CBLC5, solder a 3 pin header on the rear of the board, on the left side contacts
+# From top to bottom is: T1 (Tx), R1 (Rx), RST (connect this to ground to enable flashing)
+# Solder the large connector on the bottom of this rear side (pint 6, 3.3V).
+# Ground can be used on the main PCB's header that connects to the LED board.
+# CBLC5 PCB image: https://docs.libretiny.eu/boards/cblc5/cblc5.svg
+
+substitutions:
+  frequency_cw: "1220Hz"
+  frequency_ww: "1220Hz"
+  default_colour_temperature: "6500 K"
+  light_restore_mode: RESTORE_DEFAULT_OFF
+  
+esphome:
+  name: casaluxlight1
+  friendly_name: Aldi Light 1
+
+  on_boot:
+    priority: 600
+    then:
+      - light.turn_on: 
+          id: downlight
+          brightness: 100%
+          color_temperature: 6500K
+      - delay: 2.5s
+      - light.turn_off:
+          id: downlight
+
+bk72xx:
+  board: cblc5
+
+# Enable logging
+logger:
+
+#########################################################################
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_pass
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Casaluxlight1 Fallback Hotspot"
+    password: !secret wifi_fallback
+
+captive_portal:
+
+#########################################################################
+# Output control
+# Output is dual channel PWM LED driver KP18062ESPA
+output:
+  - platform: libretiny_pwm
+    id: colour_cool
+    pin: P26      
+    inverted: False
+
+  - platform: libretiny_pwm
+    id: colour_warm
+    pin: P24     
+    inverted: False
+
+
+#########################################################################
+# Define the LEDs as a device type 'Light'.
+# See: https://esphome.io/components/light/cwww.html
+#
+light:
+  - platform: cwww
+    name: "Downlight"
+    id: downlight
+    cold_white: colour_cool
+    warm_white: colour_warm
+    constant_brightness: True
+    icon: mdi:lightbulb-on
+    cold_white_color_temperature: 6536 K
+    warm_white_color_temperature: 2000 K
+    restore_mode: ${light_restore_mode}
+
+    
+    
